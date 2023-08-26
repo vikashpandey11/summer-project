@@ -1,0 +1,201 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+
+public class Notepad {
+    private JFrame frame;
+    private JTextArea textArea;
+    private JFileChooser fileChooser;
+    private JMenuItem cutMenuItem;
+    private JMenuItem copyMenuItem;
+    private JMenuItem pasteMenuItem;
+
+    public Notepad() {
+        frame = new JFrame("Notepad");
+        textArea = new JTextArea();
+        fileChooser = new JFileChooser();
+        cutMenuItem = new JMenuItem("Cut");
+        copyMenuItem = new JMenuItem("Copy");
+        pasteMenuItem = new JMenuItem("Paste");
+
+        createFileMenu();
+        createEditMenu();
+
+        frame.add(new JScrollPane(textArea), BorderLayout.CENTER);
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.setSize(800, 600);
+        frame.setVisible(true);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                exit();
+            }
+        });
+    }
+
+    private void createFileMenu() {
+        // Create menu bar
+        JMenuBar menuBar = new JMenuBar();
+        frame.setJMenuBar(menuBar);
+
+        // Create file menu
+        JMenu fileMenu = new JMenu("File");
+        menuBar.add(fileMenu);
+
+        // Create file menu items
+        JMenuItem newMenuItem = new JMenuItem("New");
+        JMenuItem openMenuItem = new JMenuItem("Open");
+        JMenuItem saveMenuItem = new JMenuItem("Save");
+        JMenuItem saveAsMenuItem = new JMenuItem("Save As");
+        JMenuItem exitMenuItem = new JMenuItem("Exit");
+
+        // Add file menu items to file menu
+        fileMenu.add(newMenuItem);
+        fileMenu.add(openMenuItem);
+        fileMenu.add(saveMenuItem);
+        fileMenu.add(saveAsMenuItem);
+        fileMenu.addSeparator();
+        fileMenu.add(exitMenuItem);
+
+        // Create action listeners for file menu items
+        newMenuItem.addActionListener(e -> newFile());
+        openMenuItem.addActionListener(e -> openFile());
+        saveMenuItem.addActionListener(e -> saveFile());
+        saveAsMenuItem.addActionListener(e -> saveFileAs());
+        exitMenuItem.addActionListener(e -> exit());
+
+        // Add text area to frame
+        frame.add(new JScrollPane(textArea));
+    }
+    private void createEditMenu() {
+        JMenu editMenu = new JMenu("Edit");
+        cutMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, ActionEvent.CTRL_MASK));
+        cutMenuItem.addActionListener(e -> cut());
+        copyMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.CTRL_MASK));
+        copyMenuItem.addActionListener(e -> copy());
+        pasteMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, ActionEvent.CTRL_MASK));
+        pasteMenuItem.addActionListener(e -> paste());
+        JMenuItem selectAllMenuItem = new JMenuItem("Select All");
+        selectAllMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, ActionEvent.CTRL_MASK));
+        selectAllMenuItem.addActionListener(e -> selectAll());
+
+        editMenu.add(cutMenuItem);
+        editMenu.add(copyMenuItem);
+        editMenu.add(pasteMenuItem);
+        editMenu.addSeparator();
+        editMenu.add(selectAllMenuItem);
+
+        JMenuBar menuBar = frame.getJMenuBar();
+        menuBar.add(editMenu);
+    }
+
+    private void newFile() {
+        if (textArea.getText().length() > 0) {
+            int result = showSaveDialog();
+            if (result == JFileChooser.APPROVE_OPTION) {
+                saveFile();
+            }
+        }
+        textArea.setText("");
+        frame.setTitle("Notepad");
+    }
+
+    private void openFile() {
+        if (textArea.getText().length() > 0) {
+            int result = showSaveDialog();
+            if (result == JFileChooser.APPROVE_OPTION) {
+                saveFile();
+            }
+        }
+        int result = fileChooser.showOpenDialog(frame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try {
+                BufferedReader reader = new BufferedReader(new FileReader(file));
+                textArea.read(reader, null);
+                reader.close();
+                frame.setTitle("Notepad - " + file.getName());
+            } catch (IOException e) {
+                showErrorDialog("Error reading file: " + file.getName());
+            }
+        }
+    }
+
+    private void saveFile() {
+        if (frame.getTitle().equals("Notepad")) {
+            saveFileAs();
+        } else {
+            File file = new File(frame.getTitle().substring(11));
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+                textArea.write(writer);
+                writer.close();
+            } catch (IOException e) {
+                showErrorDialog("Error saving file: " + file.getName());
+            }
+        }
+    }
+
+    private void saveFileAs() {
+        int result = fileChooser.showSaveDialog(frame);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try {
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+                textArea.write(writer);
+                writer.close();
+                frame.setTitle("Notepad - " +
+                        file.getName());
+            } catch (IOException e) {
+                showErrorDialog("Error saving file: " + file.getName());
+            }
+        }
+    }
+
+    private int showSaveDialog() {
+        return JOptionPane.showOptionDialog(frame, "Do you want to save the changes?", "Save Changes",
+                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+    }
+    private int showOpenDialog() {
+        return fileChooser.showOpenDialog(frame);
+    }
+
+    private void cut() {
+        textArea.cut();
+    }
+
+    private void copy() {
+        textArea.copy();
+    }
+
+    private void paste() {
+        textArea.paste();
+    }
+
+    private void selectAll() {
+        textArea.selectAll();
+    }
+
+    private void exit() {
+        if (textArea.getText().length() > 0) {
+            int result = showSaveDialog();
+            if (result == JOptionPane.YES_OPTION) {
+                saveFile();
+            } else if (result == JOptionPane.CANCEL_OPTION) {
+                return;
+            }
+        }
+        System.exit(0);
+    }
+
+    private void showErrorDialog(String message) {
+        JOptionPane.showMessageDialog(frame, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            new Notepad();
+        });
+    }
+}
